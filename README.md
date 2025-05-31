@@ -1,70 +1,228 @@
-# Getting Started with Create React App
+# Todo Application Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 📋 Table of Contents
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Tech Stack](#tech-stack)
+4. [Project Setup](#project-setup)
+5. [Architecture](#architecture)
+6. [Components](#components)
+7. [API Integration](#api-integration)
+8. [State Management](#state-management)
+9. [Testing](#testing)
+10. [Deployment](#deployment)
 
-## Available Scripts
+## Overview
+A modern React-based todo application featuring real-time updates, multiple storage options, and a responsive design. The application supports both local and API-based storage with seamless synchronization.
 
-In the project directory, you can run:
+## 🚀 Features
+### Core Features
+- **Task Management**
+  - Create, read, update, delete (CRUD) operations
+  - Mark tasks as complete/incomplete
+  - Bulk actions support
+  - Task priority levels
 
-### `npm start`
+### Search & Filter
+- **Advanced Search**
+  - Debounced search functionality
+  - Search by title and description
+  - URL parameter synchronization
+  - Real-time results
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Smart Filtering**
+  - Filter by completion status
+  - Filter by priority
+  - Multiple filter combinations
+  - Clear filter options
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### User Experience
+- **Responsive Design**
+  - Mobile-first approach
+  - Tablet and desktop optimized
+  - Touch-friendly interfaces
 
-### `npm test`
+- **Notifications**
+  - Toast notifications
+  - Action confirmations
+  - Error handling
+  - Loading states
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Tech Stack
+### Core Technologies
+- React 18.2.0
+- React Router v6.8.1
+- Axios 1.3.4
+- TailwindCSS 3.2.7
 
-### `npm run build`
+### Development Tools
+- ESLint 8.35.0
+- Prettier 2.8.4
+- Jest 27.5.1
+- React Testing Library 13.4.0
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 💻 Project Setup
+### Prerequisites
+```bash
+node >= 14.0.0
+npm >= 6.14.0
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Installation
+```bash
+# Clone repository
+git clone https://github.com/yourusername/todo-frontend.git
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Navigate to project directory
+cd todo-frontend
 
-### `npm run eject`
+# Install dependencies
+npm install
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# Set up environment variables
+cp .env.example .env
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Start development server
+npm start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🏗️ Architecture
+### Directory Structure
+```
+todo-frontend/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── AddTodo/
+│   │   ├── ApiTodos/
+│   │   ├── CompletedTodos/
+│   │   ├── DeleteTodo/
+│   │   ├── LocalTodos/
+│   │   ├── TodoDetails/
+│   │   └── Todos/
+│   ├── hooks/
+│   │   ├── useTodos.js
+│   │   └── useDebounce.js
+│   ├── services/
+│   │   └── api.js
+│   ├── utils/
+│   │   └── helpers.js
+│   └── App.js
+└── package.json
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 🧱 Components
+### AddTodo
+- Form validation
+- Priority selection
+- Due date picker
+- Category assignment
 
-## Learn More
+### TodoDetails
+- Detailed view
+- Edit functionality
+- Status management
+- Delete confirmation
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### CompletedTodos
+- Completion tracking
+- Completion date
+- Undo completion
+- Bulk actions
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 🔌 API Integration
+### Endpoints
+```javascript
+BASE_URL = process.env.REACT_APP_API_URL
 
-### Code Splitting
+// Todo endpoints
+GET    ${BASE_URL}/todos
+POST   ${BASE_URL}/todos
+GET    ${BASE_URL}/todos/:id
+PATCH  ${BASE_URL}/todos/:id
+DELETE ${BASE_URL}/todos/:id
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+// Filter endpoints
+GET    ${BASE_URL}/todos/completed
+GET    ${BASE_URL}/todos/search
+```
 
-### Analyzing the Bundle Size
+## 📊 State Management
+### Local State
+- Component-level state using useState
+- Custom hooks for shared logic
+- URL parameters for searchable/shareable states
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### API State
+- Loading states
+- Error handling
+- Data caching
+- Optimistic updates
 
-### Making a Progressive Web App
+## 🧪 Testing
+### Unit Tests
+```bash
+# Run all tests
+npm test
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+# Run specific test file
+npm test TodoDetails.test.js
 
-### Advanced Configuration
+# Run tests with coverage
+npm test -- --coverage
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### E2E Tests
+```bash
+# Start Cypress
+npm run cypress:open
 
-### Deployment
+# Run Cypress tests headlessly
+npm run cypress:run
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 📦 Deployment
+### Build
+```bash
+# Create production build
+npm run build
 
-### `npm run build` fails to minify
+# Analyze bundle size
+npm run analyze
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Environment Variables
+```env
+# API Configuration
+REACT_APP_API_URL=http://localhost:5000
+REACT_APP_API_TIMEOUT=5000
+
+# Feature Flags
+REACT_APP_ENABLE_LOCAL_STORAGE=true
+REACT_APP_ENABLE_NOTIFICATIONS=true
+```
+
+## 🔍 Code Quality
+### Linting
+```bash
+# Run ESLint
+npm run lint
+
+# Fix auto-fixable issues
+npm run lint:fix
+```
+
+### Formatting
+```bash
+# Format code
+npm run format
+
+# Check formatting
+npm run format:check
+```
+
+## 📚 Additional Resources
+- [API Documentation](./docs/api.md)
+- [Component Guide](./docs/components.md)
+- [Testing Guide](./docs/testing.md)
+- [Deployment Guide](./docs/deployment.md)
