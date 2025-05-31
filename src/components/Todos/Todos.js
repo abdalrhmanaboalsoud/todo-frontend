@@ -7,13 +7,6 @@ import DeleteTodo from "../DeleteTodo/DeleteTodo";
 import CompletedTodos from "../CompletedTodos/CompletedTodos";
 import { useSearchParams } from 'react-router-dom';
 
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
 
 function Todos() {
   const [todos, setTodos] = useState([]);
@@ -24,20 +17,12 @@ function Todos() {
   };
 
   
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
     try {
       const url = `https://todo-server-9nwr.onrender.com/todos?keyword=${searchParams.get('keyword') || ''}`;
       const response = await axios.get(url);
       setTodos(response.data);
       setLoading(false);
-      // toast.success("Todos fetched successfully!", {
-      //   position: "top-right",
-      //   autoClose: 3000,
-      //   hideProgressBar: false,
-      //   closeOnClick: true,
-      //   pauseOnHover: true,
-      //   draggable: true,
-      // });
       console.log("Todos fetched:", response.data);
     } catch (error) {
       setLoading(false);
@@ -51,7 +36,7 @@ function Todos() {
       });
       console.error("Error fetching todos:", error);
     }
-  };
+  }, [searchParams]); // Add searchParams as dependency
 
   const handleSearchChange = useCallback((e) => {
     const keyword = e.target.value;
@@ -63,18 +48,18 @@ function Todos() {
     }
     
     setLoading(true);
-  }, [setSearchParams]);
+  }, [setSearchParams, fetchTodos]); // Added fetchTodos as dependency
 
   useEffect(() => {
     const keyword = searchParams.get('keyword');
     if (keyword !== null) {
       fetchTodos();
     }
-  }, [searchParams]); // Only re-run when search params change
+  }, [searchParams, fetchTodos]); // Added fetchTodos as dependency
 
   useEffect(() => {
     fetchTodos();
-  }, []);
+  }, [fetchTodos]); // Added fetchTodos as dependency
 
   return (
     <div className="container mx-auto px-4 py-8">

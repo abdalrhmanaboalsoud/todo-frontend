@@ -1,5 +1,4 @@
 import "./App.css";
-import React from "react";
 import "tailwindcss/tailwind.css"; // Ensure Tailwind CSS is imported
 import AddTodo from "./components/AddTodo/AddTodo"; // Import your AddTodo component
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";

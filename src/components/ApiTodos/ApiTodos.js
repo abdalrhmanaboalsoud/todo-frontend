@@ -1,13 +1,11 @@
 import React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
 function ApiTodos() {
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const mounted = useRef(false);
   const fetchTodos = async () => {
     try {
       const url = "https://todo-server-9nwr.onrender.com/todo/api";
