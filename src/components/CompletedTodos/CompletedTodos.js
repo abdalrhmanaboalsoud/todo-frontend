@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -10,23 +10,18 @@ function CompletedTodos() {
     const [loading, setLoading] = useState(true);
     const [sortByCompleted, setSortByCompleted] = useState(true); // Default to true to show completed todos first
     
-    const fetchCompletedTodos = async () => {
+    const fetchCompletedTodos = useCallback(async () => {
         try {
-            const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000'; // fallback included
             const url = `https://todo-server-9nwr.onrender.com/todos/completed?completed=${sortByCompleted}`;
             const response = await axios.get(url);
             setCompletedTodos(response.data);
             setLoading(false);
-            // toast.success("Todos fetched successfully!", {
-            //     position: "top-right",
-            //     autoClose: 3000
-            // });
         } catch (error) {
             console.error("Error fetching todos:", error);
             setLoading(false);
             toast.error(error.response?.data?.message || "Failed to fetch todos");
         }
-    };
+    }, [sortByCompleted]);
 
     // Update URL and fetch todos when sorting changes
     const handleSortChange = (e) => {
@@ -37,7 +32,7 @@ function CompletedTodos() {
 
     useEffect(() => {
         fetchCompletedTodos();
-    }, [sortByCompleted]); // Re-fetch when sorting changes
+    }, [fetchCompletedTodos]); // Added fetchCompletedTodos as dependency
 
     const renderedTodos = useMemo(() => 
         completedTodos.map((todo) => (
