@@ -39,6 +39,19 @@ function LocalTodos() {
     fetchTodos();
   }, []);
 
+  const handleAddToAllTodos = async (todo) => {
+    try {
+      await axios.post('https://todo-server-9nwr.onrender.com/addtodo', {
+        title: todo.todo,
+        description: todo.description || '',
+        // Add other fields as needed
+      });
+      toast.success('Todo added to All Todos!');
+    } catch (error) {
+      toast.error('Failed to add todo to All Todos.');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -73,6 +86,12 @@ function LocalTodos() {
                   >
                     {todo.completed ? "Completed" : "Pending"}
                   </span>
+                  <button
+                    onClick={() => handleAddToAllTodos(todo)}
+                    className="ml-2 px-3 py-1 bg-cyan-700 text-white rounded hover:bg-cyan-800 transition"
+                  >
+                    +
+                  </button>
                 </div>
                 </div>
             ))}
