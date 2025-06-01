@@ -14,7 +14,7 @@ import LocalTodos from "./components/LocalTodos/LocalTodos";
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300 flex flex-col">
       <Router>
         <Navbar /> {/* Include the Navbar component */}
         <main className="flex-1">
@@ -24,7 +24,7 @@ function App() {
             <Route path="/api-todos" element={<ApiTodos />} />
             <Route path="/todos/completed" element={<CompletedTodos />} />
             <Route path="/todos" element={<Todos />} />
-            <Route path="/todos/:id" element={<TodoDetails />} />{" "}
+            <Route path="/todos/:id" element={<TodoDetails />} />
             <Route path="/local-todos" element={<LocalTodos />} />
             {/* Add more routes as needed */}
             {/* Must come last */}

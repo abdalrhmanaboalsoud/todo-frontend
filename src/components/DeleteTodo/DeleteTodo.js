@@ -35,7 +35,7 @@ function DeleteTodo({
     }
   };
 
-  const defaultClassName = "px-3 py-1 text-sm font-medium text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50";
+  const defaultClassName = "px-3 py-1 text-sm font-semibold bg-gradient-to-r from-red-800 to-red-600 text-white hover:from-red-900 hover:to-red-700 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-opacity-50";
 
   return (
     <button

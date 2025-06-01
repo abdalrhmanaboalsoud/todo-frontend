@@ -1,10 +1,17 @@
 {
   "version": 2,
   "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
     { 
       "src": "/(.*)", 
       "dest": "/index.html" 
     }
   ],
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "env": {
+    "REACT_APP_API_URL": "https://todo-server-9nwr.onrender.com"
+  }
 }

@@ -41,30 +41,30 @@ function ApiTodos() {
     <div className="container mx-auto px-4 py-8">
       {loading ? (
         <div className="flex justify-center items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {todos.map((todo) => (
             <div
               key={todo._id}
-              className={`bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow ${
-                todo.completed ? "border-l-4 border-green-500" : "border-l-4 border-yellow-500"
+              className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow ${
+                todo.completed ? "border-l-4 border-green-500 dark:border-green-400" : "border-l-4 border-yellow-500 dark:border-yellow-400"
               }`}
             >
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-xl font-semibold">{todo.title}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{todo.title}</h3>
                 <span
-                  className={`px-2 py-1 rounded-full text-sm ${
+                  className={`px-2 py-1 rounded-full text-sm font-medium ${
                     todo.completed
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
+                      ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300"
+                      : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300"
                   }`}
                 >
                   {todo.completed ? "Completed" : "Pending"}
                 </span>
               </div>
-              <p className="text-gray-600">{todo.description}</p>
+              <p className="text-gray-600 dark:text-gray-300">{todo.description}</p>
             </div>
           ))}
         </div>

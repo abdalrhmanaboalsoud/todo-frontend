@@ -3,13 +3,22 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from "react-toastify";
 import axios from "axios";
 
-
-function CompletedTodos() {
+function CompletedTodos({ sortByCompleted: controlledSortByCompleted, onSortChange }) {
     const [searchParams, setSearchParams] = useSearchParams();
+    // If no parent handler, manage state internally
+    const isControlled = typeof onSortChange === 'function' && onSortChange !== (() => {});
+    const [internalSortByCompleted, setInternalSortByCompleted] = useState(true);
+    const sortByCompleted = isControlled ? controlledSortByCompleted : internalSortByCompleted;
+    const handleSortChange = (e) => {
+        if (isControlled) {
+            onSortChange(e.target.checked);
+        } else {
+            setInternalSortByCompleted(e.target.checked);
+        }
+        setSearchParams({ completed: e.target.checked.toString() });
+    };
     const [completedTodos, setCompletedTodos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [sortByCompleted, setSortByCompleted] = useState(true); // Default to true to show completed todos first
-    
     const fetchCompletedTodos = useCallback(async () => {
         try {
             const url = `https://todo-server-9nwr.onrender.com/todos/completed?completed=${sortByCompleted}`;
@@ -22,39 +31,30 @@ function CompletedTodos() {
             toast.error(error.response?.data?.message || "Failed to fetch todos");
         }
     }, [sortByCompleted]);
-
-    // Update URL and fetch todos when sorting changes
-    const handleSortChange = (e) => {
-        setSortByCompleted(e.target.checked);
-        // Update URL params to match backend expectation
-        setSearchParams({ completed: e.target.checked.toString() });
-    };
-
     useEffect(() => {
         fetchCompletedTodos();
-    }, [fetchCompletedTodos]); // Added fetchCompletedTodos as dependency
-
+    }, [fetchCompletedTodos]);
     const renderedTodos = useMemo(() => 
         completedTodos.map((todo) => (
             <div 
                 key={todo.id} 
-                className={`bg-white p-4 rounded-lg shadow-md ${
-                    todo.completed ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500'
+                className={`bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md ${
+                    todo.completed ? 'border-l-4 border-green-500 dark:border-green-400' : 'border-l-4 border-yellow-500 dark:border-yellow-400'
                 }`}
             >
                 <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold">{todo.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-sm ${
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{todo.title}</h3>
+                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${
                         todo.completed 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-yellow-100 text-yellow-800"
+                            ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300" 
+                            : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300"
                     }`}>
                         {todo.completed ? "Completed" : "Pending"}
                     </span>
                 </div>
-                <p className="text-gray-600">{todo.description}</p>
+                <p className="text-gray-600 dark:text-gray-300">{todo.description}</p>
                 {todo.completedAt && (
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                         Completed on: {new Date(todo.completedAt).toLocaleDateString()}
                     </p>
                 )}
@@ -62,7 +62,6 @@ function CompletedTodos() {
         )), 
         [completedTodos]
     );
-    
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Add sorting control */}
@@ -74,13 +73,12 @@ function CompletedTodos() {
                         onChange={handleSortChange}
                         className="form-checkbox h-4 w-4 text-indigo-600"
                     />
-                    <span className="text-gray-700">Show completed first</span>
+                    <span className="text-gray-700 dark:text-gray-200">Show completed first</span>
                 </label>
             </div>
-
             {loading ? (
                 <div className="flex justify-center items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -90,5 +88,4 @@ function CompletedTodos() {
         </div>
     );
 }
-
 export default CompletedTodos;
