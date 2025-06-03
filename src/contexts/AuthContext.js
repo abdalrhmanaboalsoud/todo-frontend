@@ -17,7 +17,39 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
-  // Configure axios defaults
+  // Verify token and get user data on initial load
+  useEffect(() => {
+    const verifyToken = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Set the token in axios headers
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        
+        // Verify token and get user data
+        const response = await axios.get('https://todo-server-9nwr.onrender.com/auth/me');
+        setUser(response.data);
+        setToken(storedToken);
+      } catch (error) {
+        // If token is invalid, clear everything
+        console.error('Token verification failed:', error);
+        localStorage.removeItem('token');
+        delete axios.defaults.headers.common['Authorization'];
+        setToken(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyToken();
+  }, []);
+
+  // Update axios headers when token changes
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -30,6 +62,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
+      setLoading(true);
       const response = await axios.post('https://todo-server-9nwr.onrender.com/login', {
         username,
         password
@@ -43,11 +76,14 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       toast.error(error.response?.data?.error || 'Login failed');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (userData) => {
     try {
+      setLoading(true);
       const response = await axios.post('https://todo-server-9nwr.onrender.com/register', userData);
       const { token, user } = response.data;
       setToken(token);
@@ -57,17 +93,21 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       toast.error(error.response?.data?.error || 'Registration failed');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setLoading(true);
       await axios.post('https://todo-server-9nwr.onrender.com/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       setToken(null);
       setUser(null);
+      setLoading(false);
       toast.success('Logged out successfully');
     }
   };
@@ -78,15 +118,30 @@ export const AuthProvider = ({ children }) => {
 
   const handleGoogleCallback = async (token) => {
     try {
+      setLoading(true);
+      // Set the token first
       setToken(token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       // Fetch user data using the token
       const response = await axios.get('https://todo-server-9nwr.onrender.com/auth/me');
+      if (!response.data) {
+        throw new Error('No user data received');
+      }
       setUser(response.data);
       toast.success('Google login successful!');
       return true;
     } catch (error) {
-      toast.error('Google login failed');
+      console.error('Google callback error:', error);
+      // Clear everything on error
+      setToken(null);
+      setUser(null);
+      delete axios.defaults.headers.common['Authorization'];
+      localStorage.removeItem('token');
+      toast.error('Google login failed. Please try again.');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     googleLogin,
     handleGoogleCallback,
-    isAuthenticated: !!token
+    isAuthenticated: !!token && !!user
   };
 
   return (

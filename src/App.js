@@ -13,6 +13,7 @@ import CompletedTodos from "./components/CompletedTodos/CompletedTodos"; // Impo
 import LocalTodos from "./components/LocalTodos/LocalTodos";
 import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
+import GoogleCallback from "./components/Auth/GoogleCallback";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./ThemeProvider";
@@ -29,7 +30,7 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/auth/callback" element={<Login />} />
+                <Route path="/auth/callback" element={<GoogleCallback />} />
 
                 {/* Protected routes */}
                 <Route path="/" element={
