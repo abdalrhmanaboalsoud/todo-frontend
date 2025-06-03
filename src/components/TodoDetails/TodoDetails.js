@@ -46,8 +46,8 @@ function TodoDetails() {
         e.preventDefault();
         try {
             const updatedTodo = { title, description, completed };
-            const response = await axios.patch(
-                `https://todo-server-9nwr.onrender.com/utodo/${id}`, 
+            const response = await axios.put(
+                `https://todo-server-9nwr.onrender.com/todos/${id}`, 
                 updatedTodo
             );
             setTodo(response.data);
