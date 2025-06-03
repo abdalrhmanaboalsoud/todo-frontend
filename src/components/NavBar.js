@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeContext } from "../ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
+import { API_URL } from "../config";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -83,7 +84,14 @@ const Navbar = () => {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none"
                   >
-                    <span className="hidden md:block">{user?.username || user?.email}</span>
+                    <div className="flex items-center space-x-2">
+                      <img
+                        src={user?.profile_picture ? `${API_URL}${user.profile_picture}` : '/default-profile.png'}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                      />
+                      <span className="hidden md:block">{user?.first_name || user?.username || user?.email}</span>
+                    </div>
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -101,6 +109,16 @@ const Navbar = () => {
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">
                       <div className="py-1">
+                        <Link
+                          to="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            setMenuOpen(false);
+                          }}
+                        >
+                          Profile Settings
+                        </Link>
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"

@@ -15,6 +15,7 @@ import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
 import GoogleCallback from "./components/Auth/GoogleCallback";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
+import Profile from "./components/Profile";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./ThemeProvider";
 
@@ -33,6 +34,11 @@ function App() {
                 <Route path="/auth/callback" element={<GoogleCallback />} />
 
                 {/* Protected routes */}
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
                 <Route path="/" element={
                   <ProtectedRoute>
                     <Todos />
