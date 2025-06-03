@@ -1,7 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { API_URL } from '../config';
 import axios from 'axios';
+
+const API_URL = 'https://todo-server-9nwr.onrender.com';
+
+// Validation functions
+const validatePassword = (password) => {
+  const errors = [];
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character');
+  }
+  return errors;
+};
+
+const validateName = (name) => {
+  const errors = [];
+  if (!name || name.trim().length === 0) {
+    errors.push('Name cannot be empty');
+  }
+  if (name.length < 2) {
+    errors.push('Name must be at least 2 characters long');
+  }
+  if (/[^a-zA-Z\s-']/.test(name)) {
+    errors.push('Name can only contain letters, spaces, hyphens, and apostrophes');
+  }
+  return errors;
+};
 
 const Profile = () => {
   const { user, token, updateUser } = useAuth();
@@ -15,6 +51,13 @@ const Profile = () => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    first_name: [],
+    last_name: [],
+    currentPassword: [],
+    newPassword: [],
+    confirmPassword: [],
+  });
 
   useEffect(() => {
     if (user) {
@@ -27,12 +70,43 @@ const Profile = () => {
     }
   }, [user]);
 
+  const validateField = (name, value) => {
+    let fieldErrors = [];
+    
+    switch (name) {
+      case 'first_name':
+      case 'last_name':
+        fieldErrors = validateName(value);
+        break;
+      case 'newPassword':
+        if (value) {
+          fieldErrors = validatePassword(value);
+        }
+        break;
+      case 'confirmPassword':
+        if (value && value !== formData.newPassword) {
+          fieldErrors.push('Passwords do not match');
+        }
+        break;
+      default:
+        break;
+    }
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: fieldErrors
+    }));
+
+    return fieldErrors.length === 0;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    validateField(name, value);
   };
 
   const handleProfileUpdate = async (e) => {
@@ -40,12 +114,25 @@ const Profile = () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
 
+    // Validate names
+    const isFirstNameValid = validateField('first_name', formData.first_name);
+    const isLastNameValid = validateField('last_name', formData.last_name);
+
+    if (!isFirstNameValid || !isLastNameValid) {
+      setMessage({
+        type: 'error',
+        text: 'Please fix the validation errors before updating your profile'
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.put(
+      const response = await axios.patch(
         `${API_URL}/api/profile`,
         {
-          first_name: formData.first_name,
-          last_name: formData.last_name,
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -66,8 +153,28 @@ const Profile = () => {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    if (formData.newPassword !== formData.confirmPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match' });
+    
+    // Validate passwords
+    const isNewPasswordValid = validateField('newPassword', formData.newPassword);
+    const isConfirmPasswordValid = validateField('confirmPassword', formData.confirmPassword);
+
+    if (!isNewPasswordValid || !isConfirmPasswordValid) {
+      setMessage({
+        type: 'error',
+        text: 'Please fix the password validation errors'
+      });
+      return;
+    }
+
+    if (!formData.currentPassword) {
+      setErrors(prev => ({
+        ...prev,
+        currentPassword: ['Current password is required']
+      }));
+      setMessage({
+        type: 'error',
+        text: 'Please enter your current password'
+      });
       return;
     }
 
@@ -75,7 +182,7 @@ const Profile = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      await axios.put(
+      await axios.patch(
         `${API_URL}/api/profile/password`,
         {
           currentPassword: formData.currentPassword,
@@ -93,6 +200,12 @@ const Profile = () => {
         newPassword: '',
         confirmPassword: '',
       }));
+      setErrors({
+        ...errors,
+        currentPassword: [],
+        newPassword: [],
+        confirmPassword: [],
+      });
     } catch (error) {
       setMessage({
         type: 'error',
@@ -231,8 +344,17 @@ const Profile = () => {
               name="first_name"
               value={formData.first_name}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                errors.first_name.length > 0 ? 'border-red-300' : 'border-gray-300'
+              }`}
             />
+            {errors.first_name.length > 0 && (
+              <div className="mt-1 text-sm text-red-600">
+                {errors.first_name.map((error, index) => (
+                  <p key={index}>{error}</p>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Last Name</label>
@@ -241,8 +363,17 @@ const Profile = () => {
               name="last_name"
               value={formData.last_name}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                errors.last_name.length > 0 ? 'border-red-300' : 'border-gray-300'
+              }`}
             />
+            {errors.last_name.length > 0 && (
+              <div className="mt-1 text-sm text-red-600">
+                {errors.last_name.map((error, index) => (
+                  <p key={index}>{error}</p>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <button
@@ -265,8 +396,17 @@ const Profile = () => {
               name="currentPassword"
               value={formData.currentPassword}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                errors.currentPassword.length > 0 ? 'border-red-300' : 'border-gray-300'
+              }`}
             />
+            {errors.currentPassword.length > 0 && (
+              <div className="mt-1 text-sm text-red-600">
+                {errors.currentPassword.map((error, index) => (
+                  <p key={index}>{error}</p>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">New Password</label>
@@ -275,8 +415,17 @@ const Profile = () => {
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                errors.newPassword.length > 0 ? 'border-red-300' : 'border-gray-300'
+              }`}
             />
+            {errors.newPassword.length > 0 && (
+              <div className="mt-1 text-sm text-red-600">
+                {errors.newPassword.map((error, index) => (
+                  <p key={index}>{error}</p>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
@@ -285,9 +434,28 @@ const Profile = () => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                errors.confirmPassword.length > 0 ? 'border-red-300' : 'border-gray-300'
+              }`}
             />
+            {errors.confirmPassword.length > 0 && (
+              <div className="mt-1 text-sm text-red-600">
+                {errors.confirmPassword.map((error, index) => (
+                  <p key={index}>{error}</p>
+                ))}
+              </div>
+            )}
           </div>
+        </div>
+        <div className="mt-4 text-sm text-gray-600">
+          <p>Password must contain:</p>
+          <ul className="list-disc list-inside">
+            <li>At least 8 characters</li>
+            <li>At least one uppercase letter</li>
+            <li>At least one lowercase letter</li>
+            <li>At least one number</li>
+            <li>At least one special character</li>
+          </ul>
         </div>
         <button
           type="submit"
