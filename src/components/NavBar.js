@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ThemeContext } from "../ThemeContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -13,7 +14,15 @@ const navLinks = [
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { darkMode, setDarkMode } = useContext(ThemeContext);
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <nav className="backdrop-blur-md bg-white/70 dark:bg-gray-900/70 shadow-lg sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 transition-colors">
@@ -53,20 +62,75 @@ const Navbar = () => {
               menuOpen ? "flex" : "hidden"
             } shadow md:shadow-none rounded-b-2xl md:rounded-none`}
           >
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="block px-4 py-2 font-medium text-gray-700 dark:text-gray-200 relative group hover:text-indigo-600 dark:hover:text-indigo-400 md:p-0 md:bg-transparent transition-colors"
-                onClick={() => setMenuOpen(false)}
-              >
-                <span className="inline-block">
-                  {link.label}
-                  <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full group-hover:w-full transition-all duration-300"></span>
-                </span>
-              </Link>
-            ))}
-            {/* Theme Toggle Button at the end */}
+            {isAuthenticated ? (
+              <>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className="block px-4 py-2 font-medium text-gray-700 dark:text-gray-200 relative group hover:text-indigo-600 dark:hover:text-indigo-400 md:p-0 md:bg-transparent transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span className="inline-block">
+                      {link.label}
+                      <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full group-hover:w-full transition-all duration-300"></span>
+                    </span>
+                  </Link>
+                ))}
+                {/* User Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none"
+                  >
+                    <span className="hidden md:block">{user?.username || user?.email}</span>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">
+                      <div className="py-1">
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block px-4 py-2 font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 md:p-0"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  className="block px-4 py-2 font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md md:ml-4"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
+            {/* Theme Toggle Button */}
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               className="ml-0 md:ml-4 mt-2 md:mt-0 p-2 rounded-full bg-white/60 dark:bg-gray-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 shadow transition-colors focus:outline-none"

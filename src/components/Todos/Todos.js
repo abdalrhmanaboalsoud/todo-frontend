@@ -7,7 +7,6 @@ import DeleteTodo from "../DeleteTodo/DeleteTodo";
 import CompletedTodos from "../CompletedTodos/CompletedTodos";
 import { useSearchParams } from 'react-router-dom';
 
-
 function Todos() {
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
