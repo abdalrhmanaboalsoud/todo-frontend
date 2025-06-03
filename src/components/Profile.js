@@ -255,6 +255,13 @@ const Profile = () => {
     setMessage({ type: '', text: '' });
 
     try {
+      // Log the file details for debugging
+      console.log('Uploading file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+
       const response = await axios.post(
         `${API_URL}/api/profile/picture`,
         formData,
@@ -263,17 +270,41 @@ const Profile = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
+          // Add timeout and max content length
+          timeout: 30000, // 30 seconds
+          maxContentLength: 5 * 1024 * 1024, // 5MB
         }
       );
 
-      setProfilePicture(response.data.profilePicture);
-      updateUser({ ...user, profile_picture: response.data.profilePicture });
-      setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
-      setPictureErrors([]);
+      if (response.data && response.data.profilePicture) {
+        setProfilePicture(response.data.profilePicture);
+        updateUser({ ...user, profile_picture: response.data.profilePicture });
+        setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+        setPictureErrors([]);
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
+      console.error('Profile picture upload error:', error);
+      let errorMessage = 'Failed to update profile picture';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response:', error.response.data);
+        errorMessage = error.response.data.error || errorMessage;
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        errorMessage = 'No response from server. Please try again.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+      }
+
       setMessage({
         type: 'error',
-        text: error.response?.data?.error || 'Failed to update profile picture'
+        text: errorMessage
       });
     } finally {
       setPictureLoading(false);
@@ -442,6 +473,7 @@ const Profile = () => {
                 name="currentPassword"
                 value={formData.currentPassword}
                 onChange={handleInputChange}
+                autoComplete="current-password"
                 className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
                   errors.currentPassword.length > 0 ? 'border-red-300' : 'border-gray-300'
                 }`}
@@ -461,6 +493,7 @@ const Profile = () => {
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleInputChange}
+                autoComplete="new-password"
                 className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
                   errors.newPassword.length > 0 ? 'border-red-300' : 'border-gray-300'
                 }`}
@@ -480,6 +513,7 @@ const Profile = () => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
+                autoComplete="new-password"
                 className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
                   errors.confirmPassword.length > 0 ? 'border-red-300' : 'border-gray-300'
                 }`}
