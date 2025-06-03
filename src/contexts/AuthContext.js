@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const toastShownRef = useRef(false);
 
   // Verify token and get user data on initial load
   useEffect(() => {
@@ -108,6 +109,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
       setLoading(false);
+      toastShownRef.current = false;
       toast.success('Logged out successfully');
     }
   };
@@ -116,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     window.location.href = 'https://todo-server-9nwr.onrender.com/auth/google';
   };
 
-  const handleGoogleCallback = async (token) => {
+  const handleGoogleCallback = useCallback(async (token) => {
     try {
       setLoading(true);
       // Set the token first
@@ -129,7 +131,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error('No user data received');
       }
       setUser(response.data);
-      toast.success('Google login successful!');
       return true;
     } catch (error) {
       console.error('Google callback error:', error);
@@ -143,7 +144,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const value = {
     user,
