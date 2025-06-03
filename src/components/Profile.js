@@ -354,9 +354,9 @@ const Profile = () => {
         <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
           <div className="relative">
             <img
+              className="w-32 h-32 rounded-full object-cover mb-4"
               src={profilePicture ? `${API_URL}${profilePicture}` : '/default-profile.png'}
               alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
             />
             {profilePicture && !profilePicture.includes('default-profile.png') && (
               <button

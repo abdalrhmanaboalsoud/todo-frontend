@@ -86,9 +86,9 @@ const Navbar = () => {
                   >
                     <div className="flex items-center space-x-2">
                       <img
-                        src={user?.profile_picture ? `${API_URL}${user.profile_picture}` : '/default-profile.png'}
+                        src={user?.profile_picture || '/default-profile.png'}
                         alt="Profile"
-                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                        className="w-8 h-8 rounded-full object-cover"
                       />
                       <span className="hidden md:block">{user?.first_name || user?.username || user?.email}</span>
                     </div>
