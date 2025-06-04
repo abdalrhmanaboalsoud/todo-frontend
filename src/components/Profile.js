@@ -173,6 +173,11 @@ const Profile = () => {
     }
 
     try {
+      const requestData = {
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim()
+      };
+
       console.log('Starting profile update request...', {
         url: `${API_URL}/api/profile`,
         method: 'PATCH',
@@ -180,18 +185,12 @@ const Profile = () => {
           Authorization: token ? 'Bearer [REDACTED]' : 'missing',
           'Content-Type': 'application/json'
         },
-        data: {
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim()
-        }
+        data: requestData
       });
 
       const response = await axios.patch(
         `${API_URL}/api/profile`,
-        {
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-        },
+        requestData,
         {
           headers: { 
             Authorization: `Bearer ${token}`,
@@ -202,8 +201,9 @@ const Profile = () => {
       );
 
       // Check if response is valid and contains the expected data
-      if (response && response.data && typeof response.data === 'object') {
+      if (response?.data && typeof response.data === 'object') {
         console.log('Profile update successful:', response.data);
+        // Update both local state and context
         const updatedUser = { ...user, ...response.data };
         updateUser(updatedUser);
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
@@ -211,14 +211,14 @@ const Profile = () => {
         throw new Error('Invalid response format from server');
       }
     } catch (error) {
-      // Only show error if it's a real error, not a successful update
-      if (error.response?.status >= 400) {
-        console.error('Profile update error:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
+      console.error('Profile update error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        error: error
+      });
 
+      if (error.response?.status >= 400) {
         let errorMessage = 'Failed to update profile';
         if (error.response?.data?.error) {
           errorMessage = error.response.data.error;
@@ -233,8 +233,6 @@ const Profile = () => {
           text: errorMessage
         });
       } else if (!error.response && error.message !== 'Invalid response format from server') {
-        // Only show network error if it's not a successful update
-        console.error('Network error:', error);
         setMessage({
           type: 'error',
           text: 'Network error. Please check your connection and try again.'
@@ -380,18 +378,19 @@ const Profile = () => {
 
   const handlePictureUpload = async (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+
     const validationErrors = validatePicture(file);
-    
     setPictureErrors(validationErrors);
     if (validationErrors.length > 0) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('profilePicture', file);
-
     setPictureLoading(true);
     setMessage({ type: '', text: '' });
+
+    const formData = new FormData();
+    formData.append('profilePicture', file);
 
     try {
       console.log('Starting picture upload...', {
@@ -412,8 +411,8 @@ const Profile = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
-          timeout: 30000,
-          maxContentLength: 5 * 1024 * 1024,
+          timeout: 30000, // 30 second timeout for file upload
+          maxContentLength: 5 * 1024 * 1024, // 5MB max
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             console.log('Upload progress:', percentCompleted + '%');
@@ -422,8 +421,9 @@ const Profile = () => {
       );
 
       // Check if response is valid and contains the expected data
-      if (response && response.data && response.data.profilePicture) {
+      if (response?.data?.profilePicture) {
         console.log('Picture upload successful:', response.data);
+        // Update both local state and context
         const updatedUser = { ...user, profile_picture: response.data.profilePicture };
         updateUser(updatedUser);
         setProfilePicture(response.data.profilePicture);
@@ -433,14 +433,14 @@ const Profile = () => {
         throw new Error('Invalid response format from server');
       }
     } catch (error) {
-      // Only show error if it's a real error, not a successful upload
-      if (error.response?.status >= 400) {
-        console.error('Picture upload error:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
+      console.error('Picture upload error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        error: error
+      });
 
+      if (error.response?.status >= 400) {
         let errorMessage = 'Failed to update profile picture';
         if (error.response?.data?.error) {
           errorMessage = error.response.data.error;
@@ -457,8 +457,6 @@ const Profile = () => {
           text: errorMessage
         });
       } else if (!error.response && error.message !== 'Invalid response format from server') {
-        // Only show network error if it's not a successful upload
-        console.error('Network error:', error);
         setMessage({
           type: 'error',
           text: 'Network error. Please check your connection and try again.'

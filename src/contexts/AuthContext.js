@@ -146,6 +146,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Add a function to update the user state
+  const updateUser = (userData) => {
+    setUser(userData);
+  };
+
   const value = {
     user,
     token,
@@ -155,7 +160,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     googleLogin,
     handleGoogleCallback,
-    isAuthenticated: !!token && !!user
+    isAuthenticated: !!token && !!user,
+    updateUser // Include updateUser in the context value
   };
 
   return (
