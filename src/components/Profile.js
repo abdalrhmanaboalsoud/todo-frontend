@@ -147,6 +147,12 @@ const Profile = () => {
     }
 
     try {
+      console.log('Sending profile update request:', {
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        token: token ? 'present' : 'missing'
+      });
+
       const response = await axios.patch(
         `${API_URL}/api/profile`,
         {
@@ -154,19 +160,46 @@ const Profile = () => {
           last_name: formData.last_name.trim(),
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
+
+      console.log('Profile update response:', response.data);
 
       // Update both local state and context
       const updatedUser = { ...user, ...response.data };
       updateUser(updatedUser);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error) {
-      console.error('Profile update error:', error);
+      console.error('Profile update error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers ? 'present' : 'missing'
+        }
+      });
+
+      let errorMessage = 'Failed to update profile';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Session expired. Please log in again.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You are not authorized to perform this action.';
+      } else if (!error.response) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+
       setMessage({
         type: 'error',
-        text: error.response?.data?.error || 'Failed to update profile'
+        text: errorMessage
       });
     } finally {
       setLoading(false);
@@ -275,10 +308,11 @@ const Profile = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      console.log('Uploading file:', {
+      console.log('Uploading file details:', {
         name: file.name,
         type: file.type,
-        size: file.size
+        size: file.size,
+        token: token ? 'present' : 'missing'
       });
 
       const response = await axios.post(
@@ -291,8 +325,14 @@ const Profile = () => {
           },
           timeout: 30000,
           maxContentLength: 5 * 1024 * 1024,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log('Upload progress:', percentCompleted + '%');
+          }
         }
       );
+
+      console.log('Picture upload response:', response.data);
 
       if (response.data && response.data.profilePicture) {
         // Update both local state and context
@@ -302,20 +342,32 @@ const Profile = () => {
         setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
         setPictureErrors([]);
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error('Invalid response from server: Missing profile picture URL');
       }
     } catch (error) {
-      console.error('Profile picture upload error:', error);
+      console.error('Profile picture upload error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers ? 'present' : 'missing'
+        }
+      });
+
       let errorMessage = 'Failed to update profile picture';
-      
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        errorMessage = error.response.data.error || errorMessage;
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        errorMessage = 'No response from server. Please try again.';
-      } else {
-        console.error('Error setting up request:', error.message);
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Session expired. Please log in again.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You are not authorized to perform this action.';
+      } else if (error.response?.status === 413) {
+        errorMessage = 'File is too large. Maximum size is 5MB.';
+      } else if (!error.response) {
+        errorMessage = 'Network error. Please check your connection.';
       }
 
       setMessage({
