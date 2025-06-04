@@ -154,26 +154,6 @@ const Profile = () => {
     validateField(name, value);
   };
 
-  // Add a retry mechanism for failed requests
-  const makeRequest = async (requestFn, maxRetries = 3) => {
-    let lastError;
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        return await requestFn();
-      } catch (error) {
-        console.error(`Request attempt ${i + 1} failed:`, error);
-        lastError = error;
-        if (error.response) {
-          // If we got a response, don't retry
-          throw error;
-        }
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-      }
-    }
-    throw lastError;
-  };
-
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -267,6 +247,8 @@ const Profile = () => {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage({ type: '', text: '' });
     
     // Validate passwords
     const isNewPasswordValid = validateField('newPassword', formData.newPassword);
@@ -277,6 +259,7 @@ const Profile = () => {
         type: 'error',
         text: 'Please fix the password validation errors'
       });
+      setLoading(false);
       return;
     }
 
@@ -289,42 +272,86 @@ const Profile = () => {
         type: 'error',
         text: 'Please enter your current password'
       });
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
     try {
-      await axios.patch(
+      console.log('Starting password update request...', {
+        url: `${API_URL}/api/profile/password`,
+        method: 'PATCH',
+        headers: {
+          Authorization: token ? 'Bearer [REDACTED]' : 'missing',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const response = await axios.patch(
         `${API_URL}/api/profile/password`,
         {
           currentPassword: formData.currentPassword,
           newPassword: formData.newPassword,
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000 // 10 second timeout
         }
       );
 
-      setMessage({ type: 'success', text: 'Password updated successfully!' });
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      }));
-      setErrors({
-        ...errors,
-        currentPassword: [],
-        newPassword: [],
-        confirmPassword: [],
-      });
+      // Check if response is valid
+      if (response && response.data) {
+        console.log('Password update successful:', response.data);
+        setMessage({ type: 'success', text: 'Password updated successfully!' });
+        // Clear the form
+        setFormData(prev => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        }));
+        // Clear any validation errors
+        setErrors({
+          ...errors,
+          currentPassword: [],
+          newPassword: [],
+          confirmPassword: [],
+        });
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.error || 'Failed to update password'
-      });
+      // Only show error if it's a real error, not a successful update
+      if (error.response?.status >= 400) {
+        console.error('Password update error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+
+        let errorMessage = 'Failed to update password';
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'You are not authorized to perform this action.';
+        }
+
+        setMessage({
+          type: 'error',
+          text: errorMessage
+        });
+      } else if (!error.response && error.message !== 'Invalid response format from server') {
+        // Only show network error if it's not a successful update
+        console.error('Network error:', error);
+        setMessage({
+          type: 'error',
+          text: 'Network error. Please check your connection and try again.'
+        });
+      }
     } finally {
       setLoading(false);
     }

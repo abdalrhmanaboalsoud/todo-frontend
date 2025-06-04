@@ -2,7 +2,6 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeContext } from "../ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
-import { API_URL } from "../config";
 
 const navLinks = [
   { to: "/", label: "Home" },
