@@ -62,6 +62,22 @@ const Profile = () => {
   const [pictureErrors, setPictureErrors] = useState([]);
   const [pictureLoading, setPictureLoading] = useState(false);
 
+  // Add message timeout cleanup
+  useEffect(() => {
+    let timeoutId;
+    if (message.text) {
+      timeoutId = setTimeout(() => {
+        setMessage({ type: '', text: '' });
+      }, 5000); // Message will stay for 5 seconds
+    }
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [message]);
+
+  // Update local state when user data changes
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
@@ -142,9 +158,12 @@ const Profile = () => {
         }
       );
 
-      updateUser(response.data);
+      // Update both local state and context
+      const updatedUser = { ...user, ...response.data };
+      updateUser(updatedUser);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error) {
+      console.error('Profile update error:', error);
       setMessage({
         type: 'error',
         text: error.response?.data?.error || 'Failed to update profile'
@@ -256,7 +275,6 @@ const Profile = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      // Log the file details for debugging
       console.log('Uploading file:', {
         name: file.name,
         type: file.type,
@@ -271,15 +289,16 @@ const Profile = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
-          // Add timeout and max content length
-          timeout: 30000, // 30 seconds
-          maxContentLength: 5 * 1024 * 1024, // 5MB
+          timeout: 30000,
+          maxContentLength: 5 * 1024 * 1024,
         }
       );
 
       if (response.data && response.data.profilePicture) {
+        // Update both local state and context
+        const updatedUser = { ...user, profile_picture: response.data.profilePicture };
+        updateUser(updatedUser);
         setProfilePicture(response.data.profilePicture);
-        updateUser({ ...user, profile_picture: response.data.profilePicture });
         setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
         setPictureErrors([]);
       } else {
@@ -290,16 +309,12 @@ const Profile = () => {
       let errorMessage = 'Failed to update profile picture';
       
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error('Error response:', error.response.data);
         errorMessage = error.response.data.error || errorMessage;
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('No response received:', error.request);
         errorMessage = 'No response from server. Please try again.';
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error('Error setting up request:', error.message);
       }
 
@@ -324,10 +339,13 @@ const Profile = () => {
         }
       );
 
+      // Update both local state and context
+      const updatedUser = { ...user, profile_picture: response.data.profilePicture };
+      updateUser(updatedUser);
       setProfilePicture(response.data.profilePicture);
-      updateUser({ ...user, profile_picture: response.data.profilePicture });
       setMessage({ type: 'success', text: 'Profile picture removed successfully!' });
     } catch (error) {
+      console.error('Delete picture error:', error);
       setMessage({
         type: 'error',
         text: error.response?.data?.error || 'Failed to remove profile picture'
