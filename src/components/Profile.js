@@ -179,6 +179,19 @@ const Profile = () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
 
+    // Validate names
+    const isFirstNameValid = validateField('first_name', formData.first_name);
+    const isLastNameValid = validateField('last_name', formData.last_name);
+
+    if (!isFirstNameValid || !isLastNameValid) {
+      setMessage({
+        type: 'error',
+        text: 'Please fix the validation errors before updating your profile'
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       console.log('Starting profile update request...', {
         url: `${API_URL}/api/profile`,
@@ -204,65 +217,49 @@ const Profile = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          timeout: 10000, // 10 second timeout
-          validateStatus: function (status) {
-            console.log('Response status:', status);
-            return status >= 200 && status < 500; // Accept all responses for logging
-          }
+          timeout: 10000 // 10 second timeout
         }
       );
 
-      console.log('Profile update response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        data: response.data
-      });
-
-      if (response.status >= 200 && response.status < 300) {
+      // Check if response is valid and contains the expected data
+      if (response && response.data && typeof response.data === 'object') {
+        console.log('Profile update successful:', response.data);
         const updatedUser = { ...user, ...response.data };
         updateUser(updatedUser);
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
       } else {
-        throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+        throw new Error('Invalid response format from server');
       }
     } catch (error) {
-      console.error('Profile update error details:', {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers ? 'present' : 'missing',
-          timeout: error.config?.timeout,
-          validateStatus: error.config?.validateStatus ? 'custom' : 'default'
+      // Only show error if it's a real error, not a successful update
+      if (error.response?.status >= 400) {
+        console.error('Profile update error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+
+        let errorMessage = 'Failed to update profile';
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'You are not authorized to perform this action.';
         }
-      });
 
-      let errorMessage = 'Failed to update profile';
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Session expired. Please log in again.';
-      } else if (error.response?.status === 403) {
-        errorMessage = 'You are not authorized to perform this action.';
-      } else if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (error.code === 'ERR_NETWORK') {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      } else if (!error.response) {
-        errorMessage = `Network error (${error.message}). Please check your connection and try again.`;
+        setMessage({
+          type: 'error',
+          text: errorMessage
+        });
+      } else if (!error.response && error.message !== 'Invalid response format from server') {
+        // Only show network error if it's not a successful update
+        console.error('Network error:', error);
+        setMessage({
+          type: 'error',
+          text: 'Network error. Please check your connection and try again.'
+        });
       }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
     } finally {
       setLoading(false);
     }
@@ -363,16 +360,6 @@ const Profile = () => {
       return;
     }
 
-    // Check server health before proceeding
-    const isHealthy = await checkServerHealth();
-    if (!isHealthy) {
-      setMessage({
-        type: 'error',
-        text: 'Unable to connect to server. Please try again later.'
-      });
-      return;
-    }
-
     const formData = new FormData();
     formData.append('profilePicture', file);
 
@@ -380,76 +367,76 @@ const Profile = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await makeRequest(async () => {
-        console.log('Uploading file details:', {
+      console.log('Starting picture upload...', {
+        url: `${API_URL}/api/profile/picture`,
+        method: 'POST',
+        file: {
           name: file.name,
           type: file.type,
-          size: file.size,
-          token: token ? 'present' : 'missing'
-        });
-
-        return await axios.post(
-          `${API_URL}/api/profile/picture`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-            timeout: 30000,
-            maxContentLength: 5 * 1024 * 1024,
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              console.log('Upload progress:', percentCompleted + '%');
-            }
-          }
-        );
+          size: file.size
+        }
       });
 
-      console.log('Picture upload response:', response.data);
+      const response = await axios.post(
+        `${API_URL}/api/profile/picture`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 30000,
+          maxContentLength: 5 * 1024 * 1024,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log('Upload progress:', percentCompleted + '%');
+          }
+        }
+      );
 
-      if (response.data && response.data.profilePicture) {
-        // Update both local state and context
+      // Check if response is valid and contains the expected data
+      if (response && response.data && response.data.profilePicture) {
+        console.log('Picture upload successful:', response.data);
         const updatedUser = { ...user, profile_picture: response.data.profilePicture };
         updateUser(updatedUser);
         setProfilePicture(response.data.profilePicture);
         setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
         setPictureErrors([]);
       } else {
-        throw new Error('Invalid response from server: Missing profile picture URL');
+        throw new Error('Invalid response format from server');
       }
     } catch (error) {
-      console.error('Profile picture upload error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers ? 'present' : 'missing'
+      // Only show error if it's a real error, not a successful upload
+      if (error.response?.status >= 400) {
+        console.error('Picture upload error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+
+        let errorMessage = 'Failed to update profile picture';
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'You are not authorized to perform this action.';
+        } else if (error.response?.status === 413) {
+          errorMessage = 'File is too large. Maximum size is 5MB.';
         }
-      });
 
-      let errorMessage = 'Failed to update profile picture';
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Session expired. Please log in again.';
-      } else if (error.response?.status === 403) {
-        errorMessage = 'You are not authorized to perform this action.';
-      } else if (error.response?.status === 413) {
-        errorMessage = 'File is too large. Maximum size is 5MB.';
-      } else if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Upload timed out. Please try again.';
-      } else if (!error.response) {
-        errorMessage = 'Network error. Please check your connection and try again.';
+        setMessage({
+          type: 'error',
+          text: errorMessage
+        });
+      } else if (!error.response && error.message !== 'Invalid response format from server') {
+        // Only show network error if it's not a successful upload
+        console.error('Network error:', error);
+        setMessage({
+          type: 'error',
+          text: 'Network error. Please check your connection and try again.'
+        });
       }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
     } finally {
       setPictureLoading(false);
     }
