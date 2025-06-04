@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
 const API_URL = 'https://todo-server-9nwr.onrender.com';
+const DEFAULT_PROFILE_PICTURE = 'https://res.cloudinary.com/dzh4puawn/image/upload/v1748993287/profile_pictures/default-profile.svg';
 
 // Validation functions
 const validatePassword = (password) => {
@@ -355,7 +356,7 @@ const Profile = () => {
           <div className="relative">
             <img
               className="w-32 h-32 rounded-full object-cover mb-4"
-              src={profilePicture ? `${API_URL}${profilePicture}` : '/default-profile.png'}
+              src={profilePicture || DEFAULT_PROFILE_PICTURE}
               alt="Profile"
             />
             {profilePicture && !profilePicture.includes('default-profile.png') && (
@@ -465,6 +466,15 @@ const Profile = () => {
       <div className="p-6 bg-white rounded-lg shadow">
         <form onSubmit={handlePasswordUpdate}>
           <h2 className="text-xl font-semibold mb-4">Change Password</h2>
+          {/* Hidden username field for accessibility */}
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            value={user?.username || user?.email || ''}
+            readOnly
+            className="hidden"
+          />
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Current Password</label>

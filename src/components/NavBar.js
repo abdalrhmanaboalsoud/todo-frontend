@@ -13,6 +13,8 @@ const navLinks = [
   { to: "/local-todos", label: "Local Todos" },
 ];
 
+const DEFAULT_PROFILE_PICTURE = 'https://res.cloudinary.com/dzh4puawn/image/upload/v1748993287/profile_pictures/default-profile.svg';
+
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -86,7 +88,7 @@ const Navbar = () => {
                   >
                     <div className="flex items-center space-x-2">
                       <img
-                        src={user?.profile_picture || '/default-profile.png'}
+                        src={user?.profile_picture || DEFAULT_PROFILE_PICTURE}
                         alt="Profile"
                         className="w-8 h-8 rounded-full object-cover"
                       />
