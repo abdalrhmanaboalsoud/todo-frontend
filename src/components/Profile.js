@@ -40,6 +40,18 @@ const validateName = (name) => {
   return errors;
 };
 
+// Add server health check
+const checkServerHealth = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/test`);
+    console.log('Server health check:', response.data);
+    return true;
+  } catch (error) {
+    console.error('Server health check failed:', error);
+    return false;
+  }
+};
+
 const Profile = () => {
   const { user, token, updateUser } = useAuth();
   const [formData, setFormData] = useState({
@@ -89,6 +101,20 @@ const Profile = () => {
     }
   }, [user]);
 
+  // Add server health check on component mount
+  useEffect(() => {
+    const verifyServer = async () => {
+      const isHealthy = await checkServerHealth();
+      if (!isHealthy) {
+        setMessage({
+          type: 'error',
+          text: 'Unable to connect to server. Please try again later.'
+        });
+      }
+    };
+    verifyServer();
+  }, []);
+
   const validateField = (name, value) => {
     let fieldErrors = [];
     
@@ -128,29 +154,43 @@ const Profile = () => {
     validateField(name, value);
   };
 
+  // Add a retry mechanism for failed requests
+  const makeRequest = async (requestFn, maxRetries = 3) => {
+    let lastError;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        console.error(`Request attempt ${i + 1} failed:`, error);
+        lastError = error;
+        if (error.response) {
+          // If we got a response, don't retry
+          throw error;
+        }
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+      }
+    }
+    throw lastError;
+  };
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: '', text: '' });
 
-    // Validate names
-    const isFirstNameValid = validateField('first_name', formData.first_name);
-    const isLastNameValid = validateField('last_name', formData.last_name);
-
-    if (!isFirstNameValid || !isLastNameValid) {
-      setMessage({
-        type: 'error',
-        text: 'Please fix the validation errors before updating your profile'
-      });
-      setLoading(false);
-      return;
-    }
-
     try {
-      console.log('Sending profile update request:', {
-        first_name: formData.first_name.trim(),
-        last_name: formData.last_name.trim(),
-        token: token ? 'present' : 'missing'
+      console.log('Starting profile update request...', {
+        url: `${API_URL}/api/profile`,
+        method: 'PATCH',
+        headers: {
+          Authorization: token ? 'Bearer [REDACTED]' : 'missing',
+          'Content-Type': 'application/json'
+        },
+        data: {
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim()
+        }
       });
 
       const response = await axios.patch(
@@ -163,26 +203,44 @@ const Profile = () => {
           headers: { 
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
+          },
+          timeout: 10000, // 10 second timeout
+          validateStatus: function (status) {
+            console.log('Response status:', status);
+            return status >= 200 && status < 500; // Accept all responses for logging
           }
         }
       );
 
-      console.log('Profile update response:', response.data);
+      console.log('Profile update response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: response.data
+      });
 
-      // Update both local state and context
-      const updatedUser = { ...user, ...response.data };
-      updateUser(updatedUser);
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      if (response.status >= 200 && response.status < 300) {
+        const updatedUser = { ...user, ...response.data };
+        updateUser(updatedUser);
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      } else {
+        throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+      }
     } catch (error) {
       console.error('Profile update error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        message: error.message,
+        headers: error.response?.headers,
         config: {
           url: error.config?.url,
           method: error.config?.method,
-          headers: error.config?.headers ? 'present' : 'missing'
+          headers: error.config?.headers ? 'present' : 'missing',
+          timeout: error.config?.timeout,
+          validateStatus: error.config?.validateStatus ? 'custom' : 'default'
         }
       });
 
@@ -193,8 +251,12 @@ const Profile = () => {
         errorMessage = 'Session expired. Please log in again.';
       } else if (error.response?.status === 403) {
         errorMessage = 'You are not authorized to perform this action.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error. Please check your connection and try again.';
       } else if (!error.response) {
-        errorMessage = 'Network error. Please check your connection.';
+        errorMessage = `Network error (${error.message}). Please check your connection and try again.`;
       }
 
       setMessage({
@@ -301,6 +363,16 @@ const Profile = () => {
       return;
     }
 
+    // Check server health before proceeding
+    const isHealthy = await checkServerHealth();
+    if (!isHealthy) {
+      setMessage({
+        type: 'error',
+        text: 'Unable to connect to server. Please try again later.'
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append('profilePicture', file);
 
@@ -308,29 +380,31 @@ const Profile = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      console.log('Uploading file details:', {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        token: token ? 'present' : 'missing'
-      });
+      const response = await makeRequest(async () => {
+        console.log('Uploading file details:', {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          token: token ? 'present' : 'missing'
+        });
 
-      const response = await axios.post(
-        `${API_URL}/api/profile/picture`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          timeout: 30000,
-          maxContentLength: 5 * 1024 * 1024,
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log('Upload progress:', percentCompleted + '%');
+        return await axios.post(
+          `${API_URL}/api/profile/picture`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+            timeout: 30000,
+            maxContentLength: 5 * 1024 * 1024,
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              console.log('Upload progress:', percentCompleted + '%');
+            }
           }
-        }
-      );
+        );
+      });
 
       console.log('Picture upload response:', response.data);
 
@@ -366,8 +440,10 @@ const Profile = () => {
         errorMessage = 'You are not authorized to perform this action.';
       } else if (error.response?.status === 413) {
         errorMessage = 'File is too large. Maximum size is 5MB.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Upload timed out. Please try again.';
       } else if (!error.response) {
-        errorMessage = 'Network error. Please check your connection.';
+        errorMessage = 'Network error. Please check your connection and try again.';
       }
 
       setMessage({
