@@ -13,6 +13,7 @@ function TodoDetails() {
     const [completed, setCompleted] = useState(false);
     const [priority, setPriority] = useState('medium');
     const [dueDate, setDueDate] = useState('');
+    const [updatedAt, setUpdatedAt] = useState('');
     const { id } = useParams();
     const { darkMode } = useContext(ThemeContext);
     // const navigate = useNavigate();
@@ -42,6 +43,11 @@ function TodoDetails() {
                 } else {
                     setDueDate('');
                 }
+                // Format updated_at timestamp
+                if (todoData.updated_at) {
+                    const date = new Date(todoData.updated_at);
+                    setUpdatedAt(date.toLocaleString());
+                }
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching todo:', error);
@@ -61,10 +67,27 @@ function TodoDetails() {
                 `https://todo-server-9nwr.onrender.com/utodo/${id}`, 
                 updatedTodo
             );
+            // Update all local state with the response data
             setTodo(response.data);
+            setTitle(response.data.title);
+            setDescription(response.data.description);
+            setCompleted(response.data.completed);
+            setPriority(response.data.priority || 'medium');
+            if (response.data.due_date) {
+                const date = new Date(response.data.due_date);
+                setDueDate(date.toISOString().split('T')[0]);
+            } else {
+                setDueDate('');
+            }
+            if (response.data.updated_at) {
+                const date = new Date(response.data.updated_at);
+                setUpdatedAt(date.toLocaleString());
+            }
             setIsEditing(false);
+            toast.success('Todo updated successfully!');
         } catch (error) {
             console.error('Error updating todo:', error);
+            toast.error('Failed to update todo. Please try again.');
         }
     };
 
@@ -130,7 +153,7 @@ function TodoDetails() {
                             <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                                 <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
                                     <p>Created: {new Date(todo.created_at).toLocaleString()}</p>
-                                    <p>Last Updated: {new Date(todo.updatedAt).toLocaleString()}</p>
+                                    <p>Last Updated: {updatedAt || 'Not available'}</p>
                                 </div>
                             </div>
                         </>
