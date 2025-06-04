@@ -126,6 +126,10 @@ function Todos() {
                     onDeleteSuccess={handleDeleteSuccess}
                   />
                 </div>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  <p>Priority: <span className="capitalize font-medium">{todo.priority || 'medium'}</span></p>
+                  {todo.due_date && <p>Due: {new Date(todo.due_date).toLocaleDateString()}</p>}
+                </div>
               </div>
             ))
           )}

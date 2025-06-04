@@ -11,6 +11,8 @@ function TodoDetails() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [completed, setCompleted] = useState(false);
+    const [priority, setPriority] = useState('medium');
+    const [dueDate, setDueDate] = useState('');
     const { id } = useParams();
     const { darkMode } = useContext(ThemeContext);
     // const navigate = useNavigate();
@@ -31,6 +33,15 @@ function TodoDetails() {
                 setTitle(todoData.title);
                 setDescription(todoData.description);
                 setCompleted(todoData.completed);
+                setPriority(todoData.priority || 'medium');
+                // Format due_date for input type="date" (YYYY-MM-DD)
+                if (todoData.due_date) {
+                    const date = new Date(todoData.due_date);
+                    const formattedDate = date.toISOString().split('T')[0];
+                    setDueDate(formattedDate);
+                } else {
+                    setDueDate('');
+                }
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching todo:', error);
@@ -45,7 +56,7 @@ function TodoDetails() {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const updatedTodo = { title, description, completed };
+            const updatedTodo = { title, description, completed, priority, due_date: dueDate || null }; // Use null if due date is empty
             const response = await axios.patch(
                 `https://todo-server-9nwr.onrender.com/utodo/${id}`, 
                 updatedTodo
@@ -102,6 +113,14 @@ function TodoDetails() {
                             </div>
                             
                             <div className="prose max-w-none">
+                                <div className="mb-4">
+                                    <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Priority</h2>
+                                    <p className="text-gray-600 dark:text-gray-400 capitalize">{todo.priority || 'medium'}</p>
+                                </div>
+                                <div className="mb-6">
+                                    <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Due Date</h2>
+                                    <p className="text-gray-600 dark:text-gray-400">{todo.due_date ? new Date(todo.due_date).toLocaleString() : 'No due date'}</p>
+                                </div>
                                 <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h2>
                                 <p className="text-gray-600 dark:text-gray-400 whitespace-pre-line mb-6">
                                     {todo.description || "No description provided"}
@@ -145,6 +164,27 @@ function TodoDetails() {
                                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-700 rounded dark:bg-gray-700 dark:checked:bg-indigo-600"
                                 />
                                 <label className="ml-2 block text-sm text-gray-900 dark:text-gray-200">Mark as completed</label>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
+                                <select
+                                    value={priority}
+                                    onChange={(e) => setPriority(e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-200"
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
+                                <input
+                                    type="date"
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-200"
+                                />
                             </div>
                             <div className="flex gap-4">
                                 <button
